@@ -99,10 +99,8 @@ public class ChatterDAO {
 		String matchedIdentifier=matchedIdentifiers.get(index).toString();
 		Map map=new HashMap();
 		map.put("matchedIdentifier", matchedIdentifier);
-		System.out.println(matchedIdentifier);
 		Chatter matchedChatter=getChatterByID(matchedID);
-		System.out.println(matchedChatter.toString());
-		map.put("matchedChatter", matchedChatter);
+		map.put("matchedChatter",matchedChatter);
 		return map;
         
 	}

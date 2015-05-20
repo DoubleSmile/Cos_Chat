@@ -19,11 +19,28 @@ String basePath = request.getScheme()+"://"+request.getServerName()+":"+request.
 	<link rel="stylesheet" type="text/css" href="styles.css">
 	-->
   </head>
+  <script src="/Cos_Chat/js/jquery-2.1.3.js"></script>
+  <script type="text/javascript">
+    $(document).ready(
+    		function(){
+   			 var json={"chatterName":"德玛西亚","identifier":"DEMa"};
+   	       $.ajax({
+   			type: "post",
+   			contentType:"application/json",
+   			url: "/Cos_Chat/openChat",
+   			data: JSON.stringify(json),
+   			success: function(data){
+   		    	$("response").html(JSON.stringify(json));
+   			}
+   		});
+         
+    });
+    
+  </script>
   
   <body>
     This is my JSP page. <br>
-    <a href="/Cos_Chat/hello">点击试试</a>
-   <h1> ${msg}</h1>
-    
+    <p class="response"></p>
   </body>
+  
 </html>

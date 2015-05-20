@@ -9,6 +9,11 @@ public class User {
 		this.chatterID = chatterID;
 	}
 	private String identifier;
+	@Override
+	public String toString() {
+		return "User [id=" + id + ", state=" + state + ", identifier="
+				+ identifier + ", chatterID=" + chatterID + "]";
+	}
 	private int chatterID;
 	public int getChatterID() {
 		return chatterID;

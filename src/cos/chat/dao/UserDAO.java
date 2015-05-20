@@ -27,6 +27,7 @@ public class UserDAO {
 	public void add(User user){
 		this.getTemplate().update("insert into User values(?,?,?,?)",
 				new Object[]{null,user.getChatterID(),user.getIdentifier(),user.getState()});
+		System.out.println(user.toString());
 	}
 	
 	public void setReady(int userID){
@@ -46,6 +47,7 @@ public class UserDAO {
 	} 
 	
 	public void update(User user){
+		System.out.println(user.toString());
 		this.getTemplate().update("update User set chatterID = ? and state = ? where identifier = ?",
 				new Object[]{user.getChatterID(),user.getState(),user.getIdentifier()});
 	}

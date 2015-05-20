@@ -11,14 +11,15 @@ import net.sf.json.JSONObject;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
 import cos.chat.model.Chatter;
 import cos.chat.model.User;
 import cos.chat.service.ChatterService;
-import cos.chat.service.LinkService;
 import cos.chat.service.UserService;
 import cos.chat.util.InputStreamUtil;
 import cos.chat.util.PrintUtil;
@@ -26,14 +27,6 @@ import cos.chat.util.PrintUtil;
 @Controller
 public class IndexController {
 	
-	private LinkService linkService;
-	public LinkService getLinkService() {
-		return linkService;
-	}
-	@Autowired
-	public void setLinkService(LinkService linkService) {
-		this.linkService = linkService;
-	}
 	
 	private UserService userService;
 
@@ -60,15 +53,12 @@ public class IndexController {
 		this.chatterService = chatterService;
 	}
 
-	@RequestMapping(value="/openChat",method=RequestMethod.POST)
-	public ModelAndView openChat(HttpServletRequest request,HttpServletResponse response){
-		ModelAndView mv=new ModelAndView();
-		response.setContentType("text/html;charset=utf-8");
-		mv.setViewName("index");
-//		try{
-		String result=InputStreamUtil.getInputStream(request);
-		JSONObject json=JSONObject.fromObject(result);
-        JSONObject errorJson=new JSONObject();
+	@RequestMapping(value="/openChat",method=RequestMethod.POST,headers = {"content-type=application/json"})
+	public @ResponseBody String openChat(@RequestBody String requestMessage,HttpServletRequest request,HttpServletResponse response){
+		response.setContentType("application/json;charset=utf-8");
+		JSONObject errorJson=new JSONObject();
+		try{
+		JSONObject json=JSONObject.fromObject(requestMessage);
         String name=null;
         String identifier=null;
         try{
@@ -76,15 +66,17 @@ public class IndexController {
         	identifier=json.getString("identifier");
         }catch(JSONException e){
         	errorJson.put("errorCode", 408);
-        	PrintUtil.write(request, response, errorJson.toString());
-        	return mv;
+//        	PrintUtil.write(request, response, errorJson.toString());
+        	return errorJson.toString();
         }
         int chatterID=chatterService.getChatterID(name);
-        User user=new User(identifier,chatterID,1);
-        if(!userService.exists(user))
-           userService.add(user);
+        User requestUser=new User(identifier,chatterID,1);
+        if(!userService.exists(requestUser)){
+        	
+        	userService.add(requestUser);
+        }
         else{
-        	userService.updateUser(user);
+        	userService.updateUser(requestUser);
         }
 		Chatter requestChatter=null;
 		Chatter responseChatter=null;
@@ -93,12 +85,12 @@ public class IndexController {
 			requestChatter=chatterService.getChatter(name);
 		}catch(NullPointerException e){
 			errorJson.put("errorCode", 406);
-        	PrintUtil.write(request, response, errorJson.toString());
-			return mv;
+//        	PrintUtil.write(request, response, errorJson.toString());
+			return errorJson.toString();
 		}catch(Exception e){
 			errorJson.put("errorCode", 408);
-        	PrintUtil.write(request, response, errorJson.toString());
-			return mv;
+//        	PrintUtil.write(request, response, errorJson.toString());
+			return errorJson.toString();
 		}
 		try{
 			//核心步骤！
@@ -107,33 +99,40 @@ public class IndexController {
 			matchedIdentifier=chatterService.getMatchedChatter(name).get("matchedIdentifier").toString();
 		}catch(NullPointerException e){
 			errorJson.put("waitCode", 600);
-        	PrintUtil.write(request, response, errorJson.toString());
-			return mv;
+//        	PrintUtil.write(request, response, errorJson.toString());
+			System.out.println(errorJson.toString());
+			return errorJson.toString();
 		}catch(Exception e){
 			errorJson.put("errorCode", 408);
-        	PrintUtil.write(request, response, errorJson.toString());
-			return mv;
+//        	PrintUtil.write(request, response, errorJson.toString());
+			return errorJson.toString();
 		}
-		
+		User responseUser=new User(matchedIdentifier,responseChatter.getId(),0);
+		requestUser.setState(0);
+		userService.setUnReady(requestUser);
+		userService.setUnReady(responseUser);
 		JSONObject requestJson=JSONObject.fromObject(requestChatter);
 		requestJson.put("identifier", identifier);
+		userService.setUnReady(requestUser);
 		JSONObject responseJson=JSONObject.fromObject(responseChatter);
 		responseJson.put("identifier",matchedIdentifier);
 		
 		JSONArray jsonArray=new JSONArray();
 		jsonArray.add(requestJson);
 		jsonArray.add(responseJson);
-		
-		PrintUtil.write(request, response, jsonArray.toString());
-		return mv;
+		System.out.println("测试测试");
+//		PrintUtil.write(request, response, jsonArray.toString());
+		System.out.println(jsonArray.toString());
+		return jsonArray.toString();
 		}
-//	    catch(Exception e){
-//		JSONObject errorJson=new JSONObject();
-//		errorJson.put("errorCode", 500);
-//		PrintUtil.write(request, response, errorJson.toString());}
-//	}finally{
-//		return mv;
-//	}
+	    catch(Exception e){
+		errorJson=new JSONObject();
+		errorJson.put("errorCode", 500);
+		}
+	finally{
+		return errorJson.toString();
+	}
+}
 	
 	
 	
@@ -158,13 +157,6 @@ public class IndexController {
 			userService.updateUser(anotherUser);
 			
 			JSONObject json=new JSONObject();
-			try{
-				linkService.dropLink(chatterID);
-			}catch(NullPointerException e){
-				json.put("errorCode", 405);
-				PrintUtil.write(request, response, json.toString());
-				return mv;
-			}
 			json.put("successCode", 1);
 			PrintUtil.write(request, response, json.toString());
 			return mv;
@@ -175,7 +167,13 @@ public class IndexController {
     	}finally{
     		return mv;
     	}
-		
+	}
+	
+	@RequestMapping(value="/index",method=RequestMethod.GET)
+	public ModelAndView index(){
+		ModelAndView mv=new ModelAndView();
+		mv.setViewName("index");
+		return mv;
 	}
 	   
 
